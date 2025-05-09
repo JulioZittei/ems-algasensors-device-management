@@ -1,12 +1,16 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="DeviceManagementApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+    <envs>
+      <env name="tsid.node" value="6" />
+      <env name="tsid.node.count" value="32" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="com.algasensors.device.management.DeviceManagementApplication" />
     <module name="device-management.main" />
     <option name="PROGRAM_PARAMETERS" value="-XX:MaxRAM=256m" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/microservices/device-management" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.algasensors.device.management.*" />
+        <option name="PATTERN" value="com.algasensors.device.management.common.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
