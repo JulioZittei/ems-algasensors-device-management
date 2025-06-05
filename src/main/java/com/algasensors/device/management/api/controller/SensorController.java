@@ -1,6 +1,9 @@
 package com.algasensors.device.management.api.controller;
 
+import com.algasensors.device.management.api.client.SensorMonitoringClient;
+import com.algasensors.device.management.api.model.SensorDetailOutput;
 import com.algasensors.device.management.api.model.SensorInput;
+import com.algasensors.device.management.api.model.SensorMonitoringOutput;
 import com.algasensors.device.management.api.model.SensorOutput;
 import com.algasensors.device.management.common.IdGenerator;
 import com.algasensors.device.management.domain.model.Sensor;
@@ -30,6 +33,7 @@ import java.util.Set;
 public class SensorController {
 
     private final SensorRepository sensorRepository;
+    private final SensorMonitoringClient sensorMonitoringClient;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -37,6 +41,17 @@ public class SensorController {
         var pageSensor = (sensorRepository.findAll(pageable));
 
         return new PagedModel<>(pageSensor.map(this::convertToOutput));
+    }
+
+    @GetMapping("{sensorId}/detail")
+    public SensorDetailOutput getOneWithDetail(@PathVariable("sensorId") TSID sensorId, @RequestHeader Map<String, Object> headers) {
+        var sensor = sensorRepository.findById(new SensorId(sensorId)).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND)
+        );
+
+        var sensorMonitoring = sensorMonitoringClient.getDetail(sensorId);
+
+        return convertToOutput(sensor, sensorMonitoring);
     }
 
     @GetMapping("{sensorId}")
@@ -47,7 +62,6 @@ public class SensorController {
 
         return convertToOutput(sensor);
     }
-
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -74,6 +88,9 @@ public class SensorController {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND)
         );
 
+        BeanUtils.copyProperties(sensorInput, sensor, "id", "enabled");
+        sensorRepository.save(sensor);
+
         return convertToOutput(sensor);
     }
 
@@ -99,6 +116,7 @@ public class SensorController {
         );
 
         sensorRepository.delete(sensor);
+        sensorMonitoringClient.disableMonitoring(sensorId);
     }
 
     @PutMapping("{sensorId}/enable")
@@ -110,6 +128,7 @@ public class SensorController {
 
         sensor.setEnabled(true);
         sensorRepository.save(sensor);
+        sensorMonitoringClient.enableMonitoring(sensorId);
     }
 
     @DeleteMapping("{sensorId}/enable")
@@ -121,6 +140,7 @@ public class SensorController {
 
         sensor.setEnabled(false);
         sensorRepository.save(sensor);
+        sensorMonitoringClient.disableMonitoring(sensorId);
     }
 
     private SensorOutput convertToOutput(Sensor sensor) {
@@ -132,6 +152,13 @@ public class SensorController {
                 sensor.getProtocol(),
                 sensor.getModel(),
                 sensor.getEnabled()
+        );
+    }
+
+    private SensorDetailOutput convertToOutput(Sensor sensor, SensorMonitoringOutput monitoring) {
+        return new SensorDetailOutput(
+                convertToOutput(sensor),
+                monitoring
         );
     }
 
